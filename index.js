@@ -45,17 +45,23 @@ app.post("/api/usuario", async (req, res) => {
     })
 })
 
-app.post("/api/login"), (req, res) => {
-    const{ email, senha } = req.body;
-
-    const q = "SELECT * FROM usuario WHERE email = ?"
-    db.query(q, [email], (err, data) => {
-        if (err) return res.json(err)
-        if (data.length === 0) return res.status(404).json("Usuario não encontrado!")
-        
-        const isPasswordCorrect = bcrypt.compare(senha, data[0].senha)
-        if (!isPasswordCorrect) return res.status(400).json("Senha incorreta!")
-
-        return res.json(data[0])
+app.post("/api/login", async (req, res) => {
+    const { email, senha } = req.body;
+ 
+    const q =` SELECT * FROM usuario WHERE email = ?`
+ 
+    db.query(q, [email], async (err, data) => {
+     if (err) return res.status(500).json(err)
+ 
+     if(data.length === 0) return res.status(401).json({message: 'Usuário não encontrado'})
+ 
+     const usuario = data[0];
+     const passmatch = await bcrypt.compare(senha, usuario.senha);
+ 
+     if (!passmatch) {
+         return res.status(401).json({message: 'Senha incorreta.'})
+     }
+ 
+     return res.status(200).json({message: "Logado com sucesso."})
     })
-}
+ })
