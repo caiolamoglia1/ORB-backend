@@ -40,58 +40,94 @@ app.get("/api/Ola", (req, res) => {
 })
 
 app.get("/api/usuario", (req, res) => {
-    const q = "SELECT * FROM usuario"
-    
-    db.query(q, (err, data) => {
-        if (err) return res.json(err)
-        return res.json(data)
-    })
-})
+    const q = `
+        SELECT 
+            usuario.id, 
+            usuario.nome, 
+            usuario.email, 
+            curso.nome AS curso, 
+            turno.nome AS turno, 
+            usuario.data_nasc, 
+            usuario.foto_perfil 
+        FROM usuario
+        LEFT JOIN curso ON usuario.curso_id = curso.id
+        LEFT JOIN turno ON usuario.turno_id = turno.id
+    `;
 
+    db.query(q, (err, data) => {
+        if (err) {
+            console.error("Erro ao listar usuários:", err);
+            return res.status(500).json(err);
+        }
+        return res.json(data);
+    });
+});
 
 app.post("/api/usuario", async (req, res) => {
-    const q = "INSERT INTO usuario (`nome`,`email`, `curso`, `turno`, `dataNasc`, `senha`) VALUES (?)"
-    const hashPassword = await bcrypt.hash(req.body.senha, 10)
-    const values = [
-        req.body.nome,
-        req.body.email,
-        req.body.curso,
-        req.body.turno,
-        req.body.dataNasc,
-        hashPassword
-    ]
-    db.query(q, [values], (err, data) => {
-        if (err) return res.json(err)
-        return res.json("Usuario criado com sucesso!")
-    })
-})
+    try {
+        const q = "INSERT INTO usuario (`nome`, `email`, `curso_id`, `turno_id`, `data_nasc`, `senha`, `foto_perfil`) VALUES (?)";
+        const hashPassword = await bcrypt.hash(req.body.senha, 10);
+        const values = [
+            req.body.nome,
+            req.body.email,
+            req.body.curso_id,
+            req.body.turno_id,
+            req.body.data_nasc,
+            hashPassword,
+            req.body.foto_perfil || null
+        ];
+
+        db.query(q, [values], (err, data) => {
+            if (err) {
+                console.error("Erro ao criar usuário:", err);
+                return res.status(500).json(err);
+            }
+            return res.json("Usuário criado com sucesso!");
+        });
+    } catch (error) {
+        console.error("Erro no endpoint /api/usuario:", error);
+        res.status(500).json({ message: "Erro interno no servidor" });
+    }
+});
 
 app.post("/api/login", async (req, res) => {
-   const { email, senha } = req.body;
+    const { email, senha } = req.body;
 
-   const q = `SELECT * FROM usuario WHERE email = ?`
+    const q = `SELECT * FROM usuario WHERE email = ?`;
 
-   db.query(q, [email], async (err, data) => {
-    if (err) return res.status(500).json(err)
+    db.query(q, [email], async (err, data) => {
+        if (err) {
+            console.error("Erro ao consultar o banco:", err);
+            return res.status(500).json(err);
+        }
 
-    if(data.length === 0) return res.status(401).json({message: 'Usuário não encontrado'})
+        if (data.length === 0) {
+            console.log("Usuário não encontrado:", email);
+            return res.status(401).json({ message: 'Usuário não encontrado' });
+        }
 
-    const usuario = data[0];
-    const passmatch = await bcrypt.compare(senha, usuario.senha);
+        const usuario = data[0];
+        console.log("Usuário encontrado:", usuario);
 
-    if (!passmatch) {
-        return res.status(401).json({message: 'Senha incorreta.'})
-    }
+        const passmatch = await bcrypt.compare(senha, usuario.senha);
+        if (!passmatch) {
+            console.log("Senha incorreta para o usuário:", email);
+            return res.status(401).json({ message: 'Senha incorreta.' });
+        }
 
-    req.session.usuario = {
-        id: usuario.id,
-        email: usuario.email,
-        nome: usuario.nome
-    }
+        req.session.usuario = {
+            id: usuario.id,
+            email: usuario.email,
+            nome: usuario.nome,
+            curso_id: usuario.curso_id,
+            turno_id: usuario.turno_id
+        };
 
-    return res.status(200).json({message: "Logado com sucesso."})
-   })
-})
+        console.log("Sessão salva:", req.session.usuario);
+
+        return res.status(200).json({ message: "Logado com sucesso." });
+    });
+});
 
 app.get("/api/session", (req, res) => {
     if (req.session.usuario) {

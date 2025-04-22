@@ -14,6 +14,21 @@ CREATE TABLE turno (
     nome VARCHAR(50) NOT NULL
 );
 
+-- Inserir cursos
+INSERT INTO curso (nome) VALUES 
+('Sistemas de Informação'),
+('Direito'),
+('Medicina'),
+('Engenharia de Software'),
+('Odontologia'),
+('Engenharia Química');
+
+-- Inserir turnos
+INSERT INTO turno (nome) VALUES 
+('Matutino'),
+('Vespertino'),
+('Noturno');
+
 -- Tabela de usuários
 CREATE TABLE usuario (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -23,6 +38,7 @@ CREATE TABLE usuario (
     turno_id INT,
     data_nasc DATE,
     senha VARCHAR(255) NOT NULL,
+    foto_perfil LONGBLOB DEFAULT NULL,
     FOREIGN KEY (curso_id) REFERENCES curso(id),
     FOREIGN KEY (turno_id) REFERENCES turno(id)
 );
