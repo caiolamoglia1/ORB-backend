@@ -40,19 +40,8 @@ app.get("/api/Ola", (req, res) => {
 })
 
 app.get("/api/usuario", (req, res) => {
-    const q = `
-        SELECT 
-            usuario.id, 
-            usuario.nome, 
-            usuario.email, 
-            curso.nome AS curso, 
-            turno.nome AS turno, 
-            usuario.data_nasc, 
-            usuario.foto_perfil 
-        FROM usuario
-        LEFT JOIN curso ON usuario.curso_id = curso.id
-        LEFT JOIN turno ON usuario.turno_id = turno.id
-    `;
+    const q = ` SELECT * FROM usuario`;
+
 
     db.query(q, (err, data) => {
         if (err) {
@@ -65,7 +54,7 @@ app.get("/api/usuario", (req, res) => {
 
 app.post("/api/usuario", async (req, res) => {
     try {
-        const q = "INSERT INTO usuario (`nome`, `email`, `curso_id`, `turno_id`, `data_nasc`, `senha`, `foto_perfil`) VALUES (?)";
+        const q = "INSERT INTO usuario (`nome`, `email`, `curso_id`, `turno_id`, `data_nasc`, `senha`) VALUES (?)";
         const hashPassword = await bcrypt.hash(req.body.senha, 10);
         const values = [
             req.body.nome,
@@ -74,7 +63,7 @@ app.post("/api/usuario", async (req, res) => {
             req.body.turno_id,
             req.body.data_nasc,
             hashPassword,
-            req.body.foto_perfil || null
+            
         ];
 
         db.query(q, [values], (err, data) => {
@@ -118,9 +107,7 @@ app.post("/api/login", async (req, res) => {
         req.session.usuario = {
             id: usuario.id,
             email: usuario.email,
-            nome: usuario.nome,
-            curso_id: usuario.curso_id,
-            turno_id: usuario.turno_id
+            nome: usuario.nome
         };
 
         console.log("Sessão salva:", req.session.usuario);
