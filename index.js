@@ -123,3 +123,58 @@ app.get("/api/session", (req, res) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 });
+
+// API listar
+app.get('/api/usuario', (req, res) => {
+    db.query('SELECT * FROM usuario', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Erro ao buscar usuários.' });
+        res.status(200).json(results);
+    });
+});
+
+// API Delete
+app.delete('/api/usuario/:id', (req, res) => {
+    const { id } = req.params;
+    db.query('DELETE FROM usuario WHERE id = ?', [id], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Erro ao excluir usuário.' });
+        res.status(200).json({ message: 'Usuário excluído com sucesso!' });
+    });
+});
+
+
+// API Update
+app.put('/api/usuario/:id', (req, res) => {
+    const { id } = req.params;
+    const { nome, email, curso_id, turno_id, data_nasc } = req.body;
+
+    const sql = `
+        UPDATE usuario 
+        SET nome = ?, email = ?, curso_id = ?, turno_id = ?, data_nasc = ?
+        WHERE id = ?
+    `;
+
+    db.query(sql, [nome, email, curso_id, turno_id, data_nasc, id], (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: 'Erro ao atualizar usuário.' });
+        }
+
+        res.status(200).json({ message: 'Usuário atualizado com sucesso!' });
+    });
+});
+
+// GET cursos
+app.get('/api/cursos', (req, res) => {
+    db.query('SELECT * FROM curso', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Erro ao buscar cursos.' });
+        res.json(results);
+    });
+});
+
+// GET turnos
+app.get('/api/turnos', (req, res) => {
+    db.query('SELECT * FROM turno', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Erro ao buscar turnos.' });
+        res.json(results);
+    });
+});
