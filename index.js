@@ -169,90 +169,82 @@ app.put('/api/usuario/:id', (req, res) => {
     });
 });
 
+app.put('/api/usuarioperfil/:id', upload.single('imagem'), (req, res) => {
+    const userId = req.params.id;
+    const { nome, email, senha } = req.body;
+    const imagem = req.file;
 
-app.put('/api/usuarioperfil/:id', async (req, res) => {
-    const { id } = req.params;
-    const { nome, email, curso_id, turno_id, data_nasc, senhaAtual, novaSenha } = req.body;
+    const campos = [];
+    const valores = [];
 
-
-    const updates = {};
-    const params = [];
-
-    if (nome !== undefined) {
-        updates.nome = '?';
-        params.push(nome);
-    }
-    if (email !== undefined) {
-        updates.email = '?';
-        params.push(email);
-    }
-    if (curso_id !== undefined) {
-        updates.curso_id = '?';
-        params.push(curso_id);
-    }
-    if (turno_id !== undefined) {
-        updates.turno_id = '?';
-        params.push(turno_id);
-    }
-    if (data_nasc !== undefined) {
-        updates.data_nasc = '?';
-        params.push(data_nasc);
+    if (nome) {
+        campos.push('nome = ?');
+        valores.push(nome);
     }
 
-    // **MELHORIA 2: Lidar com a senha**
-    if (novaSenha) {
-        // 1. Buscar a senha atual do usuário no banco de dados para verificação
-        db.query('SELECT senha FROM usuario WHERE id = ?', [id], async (err, results) => {
+    if (email) {
+        campos.push('email = ?');
+        valores.push(email);
+    }
+
+    if (senha) {
+        // hash da senha com bcrypt (ainda usa async, precisa callback aqui também)
+        bcrypt.hash(senha, 10, (err, hash) => {
             if (err) {
-                console.error(err);
-                return res.status(500).json({ message: 'Erro ao verificar a senha atual.' });
-            }
-            if (results.length === 0) {
-                return res.status(404).json({ message: 'Usuário não encontrado.' });
+                console.error('Erro ao gerar hash:', err);
+                return res.status(500).json({ message: 'Erro ao gerar hash da senha.' });
             }
 
-            const senhaBanco = results[0].senha;
-            const senhaCorreta = await bcrypt.compare(senhaAtual, senhaBanco);
+            campos.push('senha = ?');
+            valores.push(hash);
 
-            if (senhaAtual && !senhaCorreta) {
-                return res.status(400).json({ message: 'A senha atual está incorreta.' });
+            if (imagem) {
+                campos.push('imagem = ?');
+                valores.push(imagem.buffer);
             }
 
-            // 2. Criptografar a nova senha
-            const hashedPassword = await bcrypt.hash(novaSenha, 10);
-            updates.senha = '?';
-            params.push(hashedPassword);
+            if (campos.length === 0) {
+                return res.status(400).json({ message: 'Nenhum dado enviado para atualização.' });
+            }
 
-            // Construir a query dinamicamente
-            const updateKeys = Object.keys(updates).map(key => `${key} = ${updates[key]}`).join(', ');
-            const sql = `UPDATE usuario SET ${updateKeys} WHERE id = ?`;
-            params.push(id);
+            const sql = `UPDATE usuario SET ${campos.join(', ')} WHERE id = ?`;
+            valores.push(userId);
 
-            db.query(sql, params, (err, results) => {
+            db.query(sql, valores, (err, result) => {
                 if (err) {
-                    console.error(err);
-                    return res.status(500).json({ message: 'Erro ao atualizar usuário.' });
+                    console.error('Erro ao atualizar perfil:', err);
+                    return res.status(500).json({ message: 'Erro interno ao atualizar perfil.' });
                 }
-                res.status(200).json({ message: 'Usuário atualizado com sucesso!' });
+
+                return res.json({ message: 'Perfil atualizado com sucesso.' });
             });
         });
-    } else if (Object.keys(updates).length > 0) {
-        // Construir a query dinamicamente para outros campos
-        const updateKeys = Object.keys(updates).map(key => `${key} = ${updates[key]}`).join(', ');
-        const sql = `UPDATE usuario SET ${updateKeys} WHERE id = ?`;
-        params.push(id);
-
-        db.query(sql, params, (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ message: 'Erro ao atualizar usuário.' });
-            }
-            res.status(200).json({ message: 'Usuário atualizado com sucesso!' });
-        });
     } else {
-        res.status(200).json({ message: 'Nenhuma alteração a ser feita.' });
+        // sem senha
+        if (imagem) {
+            campos.push('imagem = ?');
+            valores.push(imagem.buffer);
+        }
+
+        if (campos.length === 0) {
+            return res.status(400).json({ message: 'Nenhum dado enviado para atualização.' });
+        }
+
+        const sql = `UPDATE usuario SET ${campos.join(', ')} WHERE id = ?`;
+        valores.push(userId);
+
+        db.query(sql, valores, (err, result) => {
+            if (err) {
+                console.error('Erro ao atualizar perfil:', err);
+                return res.status(500).json({ message: 'Erro interno ao atualizar perfil.' });
+            }
+
+            return res.json({ message: 'Perfil atualizado com sucesso.' });
+        });
     }
 });
+
+
 
 // GET cursos
 app.get('/api/cursos', (req, res) => {
@@ -269,4 +261,3 @@ app.get('/api/turnos', (req, res) => {
         res.json(results);
     });
 });
-
