@@ -38,7 +38,7 @@ CREATE TABLE usuario (
     turno_id INT,
     data_nasc DATE,
     senha VARCHAR(255) NOT NULL,
-    foto_perfil LONGBLOB DEFAULT NULL,
+    imagem LONGBLOB DEFAULT NULL,
     FOREIGN KEY (curso_id) REFERENCES curso(id),
     FOREIGN KEY (turno_id) REFERENCES turno(id)
 );
@@ -70,3 +70,9 @@ CREATE TABLE evento_participante (
     FOREIGN KEY (evento_id) REFERENCES evento(id),
     FOREIGN KEY (usuario_id) REFERENCES usuario(id)
 );
+
+SELECT * FROM usuario;
+
+
+
+
