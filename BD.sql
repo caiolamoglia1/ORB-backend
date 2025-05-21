@@ -50,7 +50,8 @@ CREATE TABLE noticia (
     conteudo TEXT NOT NULL,
     data_publicacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     autor_id INT,
-    FOREIGN KEY (autor_id) REFERENCES usuario(id)
+    FOREIGN KEY (autor_id) REFERENCES usuario(id),
+    imagem LONGBLOB DEFAULT NULL
 );
 
 CREATE TABLE evento (
