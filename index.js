@@ -81,11 +81,11 @@ app.delete('/api/usuario/imagem/:id', (req, res) => {
 
 app.post("/api/usuario", upload.single('imagem'), async (req, res) => {
     try {
-        const { nome, email, curso_id, turno_id, dataNasc, senha } = req.body;
+        const { nome, email, curso_id, turno_id, dataNasc, senha, is_admin } = req.body;
         const hashPassword = await bcrypt.hash(senha, 10);
         const imagemBuffer = req.file ? req.file.buffer : null;
 
-        const q = "INSERT INTO usuario (`nome`, `email`, `curso_id`, `turno_id`, `data_nasc`, `senha`, `imagem`) VALUES (?)";
+        const q = "INSERT INTO usuario (`nome`, `email`, `curso_id`, `turno_id`, `data_nasc`, `senha`, `imagem`, `is_admin`) VALUES (?)";
         const values = [
             nome,
             email,
@@ -93,7 +93,8 @@ app.post("/api/usuario", upload.single('imagem'), async (req, res) => {
             turno_id,
             dataNasc,
             hashPassword,
-            imagemBuffer
+            imagemBuffer,
+            is_admin || 0
         ];
 
         db.query(q, [values], (err, data) => {
@@ -138,7 +139,8 @@ app.post("/api/login", async (req, res) => {
     req.session.usuario = {
         id: usuario.id,
         email: usuario.email,
-        nome: usuario.nome
+        nome: usuario.nome,
+        is_admin: usuario.is_admin
     }
 
     return res.status(200).json({message: "Logado com sucesso."})
@@ -192,6 +194,10 @@ app.put('/api/usuario/:id', upload.single('imagem'), async (req, res) => {
 
     if (campos.length === 0) {
         return res.status(400).json({ message: 'Nenhum dado enviado para atualização.' });
+    }
+    if (typeof req.body.is_admin !== 'undefined') {
+        campos.push('is_admin = ?');
+        valores.push(req.body.is_admin);
     }
 
     const sql = `UPDATE usuario SET ${campos.join(', ')} WHERE id = ?`;

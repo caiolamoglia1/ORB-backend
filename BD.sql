@@ -74,6 +74,5 @@ CREATE TABLE evento_participante (
 
 SELECT * FROM usuario;
 
-
-
-
+ALTER TABLE usuario ADD COLUMN is_admin TINYINT(1) DEFAULT 0;
+UPDATE usuario SET is_admin = 1 WHERE id = 1;
