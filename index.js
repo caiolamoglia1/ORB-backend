@@ -48,7 +48,15 @@ app.get("/api/Ola", (req, res) => {
 })
 
 app.get("/api/usuario", (req, res) => {
-    const q = "SELECT * FROM usuario"
+    const q = `
+        SELECT 
+            usuario.*, 
+            curso.nome AS curso_nome,
+            turno.nome AS turno_nome
+        FROM usuario
+        LEFT JOIN curso ON usuario.curso_id = curso.id
+        LEFT JOIN turno ON usuario.turno_id = turno.id
+    `;
     
     db.query(q, (err, data) => {
         if (err) return res.json(err)
